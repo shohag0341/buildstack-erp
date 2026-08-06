@@ -12,6 +12,7 @@ import { Input } from "../../components/ui/input";
 import { Label, FieldError } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Alert, Spinner } from "../../components/ui/alert";
+import { BackButton } from "../../components/ui/back-button";
 
 const ROLE_LABELS: Record<string, { en: string; bn: string }> = {
   owner: { en: "Owner", bn: "মালিক" },
@@ -136,7 +137,10 @@ export default function ProfilePage() {
   const roleLabel = profile.role ? ROLE_LABELS[profile.role]?.[locale] : null;
 
   return (
-    <Card className="mx-auto w-full max-w-lg">
+    return (
+    <div className="mx-auto w-full max-w-lg p-4">
+      <BackButton />
+      <Card>
       <CardHeader>
         <CardTitle>{t("auth.profile.title")}</CardTitle>
       </CardHeader>
@@ -259,7 +263,8 @@ export default function ProfilePage() {
           </Link>
         </div>
       </form>
-    </Card>
+      </Card>
+    </div>
   );
-      }
+}
       
