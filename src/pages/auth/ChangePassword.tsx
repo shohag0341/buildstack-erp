@@ -11,6 +11,7 @@ import { Label, FieldError } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Alert } from "../../components/ui/alert";
 import { PasswordRuleChecklist } from "../../components/auth/PasswordRuleChecklist";
+import { BackButton } from "../../components/ui/back-button";
 
 export default function ChangePasswordPage() {
   const { t } = useI18n();
@@ -48,7 +49,9 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <Card className="mx-auto w-full max-w-md">
+    <div className="mx-auto w-full max-w-md p-4">
+      <BackButton />
+      <Card>
       <CardHeader>
         <CardTitle>{t("auth.change.title")}</CardTitle>
       </CardHeader>
@@ -112,6 +115,7 @@ export default function ChangePasswordPage() {
           {submitting ? t("auth.change.submitting") : t("auth.change.submit")}
         </Button>
       </form>
-    </Card>
+      </Card>
+    </div>
   );
-      }
+}
