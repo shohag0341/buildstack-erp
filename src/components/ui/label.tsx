@@ -1,0 +1,23 @@
+import * as React from "react";
+import { cn } from "../../lib/utils";
+
+export const Label = React.forwardRef<
+  HTMLLabelElement,
+  React.LabelHTMLAttributes<HTMLLabelElement>
+>(({ className, ...props }, ref) => (
+  <label
+    ref={ref}
+    className={cn("mb-1.5 block text-sm font-medium text-[#1A1F26]", className)}
+    {...props}
+  />
+));
+Label.displayName = "Label";
+
+export function FieldError({ children }: { children?: string }) {
+  if (!children) return null;
+  return (
+    <p role="alert" className="mt-1.5 text-xs font-medium text-[#C0392B]">
+      {children}
+    </p>
+  );
+}
