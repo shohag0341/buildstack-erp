@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: "Hind Siliguri", "Inter", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  -webkit-text-size-adjust: 100%;
+}
