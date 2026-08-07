@@ -8,7 +8,7 @@ import { useI18n, type TranslationKey } from "../../lib/i18n";
 import { resetPasswordSchema } from "../../lib/validators";
 import type { ResetPasswordFormValues } from "../../types/auth.types";
 import { AuthLayout } from "../../components/auth/AuthLayout";
-import { Card, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
+import { Card, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label, FieldError } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
@@ -36,9 +36,6 @@ export default function ResetPasswordPage() {
     defaultValues: { password: "", confirmPassword: "" },
   });
 
-  // Supabase fires PASSWORD_RECOVERY once it parses the token from the
-  // emailed link's URL fragment. If that never fires and there's also no
-  // existing session, the link was already used or has expired.
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
