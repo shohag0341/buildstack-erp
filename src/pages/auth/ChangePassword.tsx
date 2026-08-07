@@ -118,4 +118,4 @@ export default function ChangePasswordPage() {
       </Card>
     </div>
   );
-}
+      }
