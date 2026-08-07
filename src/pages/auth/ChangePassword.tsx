@@ -1,21 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useI18n, type TranslationKey } from "../../lib/i18n";
-import { changePasswordSchema } from "../../lib/validators";
-import type { ChangePasswordFormValues } from "../../types/auth.types";
+import { resetPasswordSchema } from "../../lib/validators";
+import type { ResetPasswordFormValues } from "../../types/auth.types";
+import { AuthLayout } from "../../components/auth/AuthLayout";
 import { Card, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label, FieldError } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Alert } from "../../components/ui/alert";
 import { PasswordRuleChecklist } from "../../components/auth/PasswordRuleChecklist";
-import { BackButton } from "../../components/ui/back-button";
 
-export default function ChangePasswordPage() {
+type LinkStatus = "checking" | "valid" | "expired";
+
+export default function ResetPasswordPage() {
   const { t } = useI18n();
-  const { changePassword } = useAuth();
+  const { updatePassword } = useAuth();
+  const navigate = useNavigate();
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>("checking");
   const [serverError, setServerError] = useState<TranslationKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,20 +30,39 @@ export default function ChangePasswordPage() {
     register,
     handleSubmit,
     watch,
-    reset,
     formState: { errors },
-  } = useForm<ChangePasswordFormValues>({
-    resolver: zodResolver(changePasswordSchema),
-    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+  } = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { password: "", confirmPassword: "" },
   });
 
-  const newPassword = watch("newPassword", "");
+  // Supabase fires PASSWORD_RECOVERY once it parses the token from the
+  // emailed link's URL fragment. If that never fires and there's also no
+  // existing session, the link was already used or has expired.
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setLinkStatus("valid");
+      }
+    });
 
-  const onSubmit = async (values: ChangePasswordFormValues) => {
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase.auth.getSession();
+      setLinkStatus(data.session ? "valid" : "expired");
+    }, 1200);
+
+    return () => {
+      listener.subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  const password = watch("password", "");
+
+  const onSubmit = async (values: ResetPasswordFormValues) => {
     setServerError(null);
-    setSuccess(false);
     setSubmitting(true);
-    const { error } = await changePassword(values.currentPassword, values.newPassword);
+    const { error } = await updatePassword(values.password);
     setSubmitting(false);
 
     if (error) {
@@ -45,77 +70,75 @@ export default function ChangePasswordPage() {
       return;
     }
     setSuccess(true);
-    reset();
+    setTimeout(() => navigate("/login", { replace: true }), 1800);
   };
 
   return (
-    <div className="mx-auto w-full max-w-md p-4">
-      <BackButton />
+    <AuthLayout>
       <Card>
-      <CardHeader>
-        <CardTitle>{t("auth.change.title")}</CardTitle>
-      </CardHeader>
+        <CardHeader>
+          <CardTitle>{t("auth.reset.title")}</CardTitle>
+        </CardHeader>
 
-      {success && (
-        <Alert variant="success" className="mb-5">
-          {t("auth.change.success")}
-        </Alert>
-      )}
-      {serverError && (
-        <Alert variant="error" className="mb-5">
-          {t(serverError)}
-        </Alert>
-      )}
+        {linkStatus === "checking" && (
+          <div className="flex justify-center py-6">
+            <span className="text-sm text-[#6B6656]">{t("common.loading")}</span>
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <div>
-          <Label htmlFor="currentPassword">{t("auth.change.current")}</Label>
-          <Input
-            id="currentPassword"
-            type="password"
-            autoComplete="current-password"
-            hasError={!!errors.currentPassword}
-            {...register("currentPassword")}
-          />
-          <FieldError>
-            {errors.currentPassword && t(errors.currentPassword.message as TranslationKey)}
-          </FieldError>
-        </div>
+        {linkStatus === "expired" && (
+          <Alert variant="error">{t("auth.reset.linkExpired")}</Alert>
+        )}
 
-        <div>
-          <Label htmlFor="newPassword">{t("auth.change.new")}</Label>
-          <Input
-            id="newPassword"
-            type="password"
-            autoComplete="new-password"
-            hasError={!!errors.newPassword}
-            {...register("newPassword")}
-          />
-          <PasswordRuleChecklist password={newPassword} />
-          <FieldError>
-            {errors.newPassword && t(errors.newPassword.message as TranslationKey)}
-          </FieldError>
-        </div>
+        {linkStatus === "valid" && success && (
+          <Alert variant="success">{t("auth.reset.success")}</Alert>
+        )}
 
-        <div>
-          <Label htmlFor="confirmPassword">{t("auth.change.confirm")}</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            hasError={!!errors.confirmPassword}
-            {...register("confirmPassword")}
-          />
-          <FieldError>
-            {errors.confirmPassword && t(errors.confirmPassword.message as TranslationKey)}
-          </FieldError>
-        </div>
+        {linkStatus === "valid" && !success && (
+          <>
+            {serverError && (
+              <Alert variant="error" className="mb-5">
+                {t(serverError)}
+              </Alert>
+            )}
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+              <div>
+                <Label htmlFor="password">{t("auth.reset.newPassword")}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  hasError={!!errors.password}
+                  {...register("password")}
+                />
+                <PasswordRuleChecklist password={password} />
+                <FieldError>
+                  {errors.password && t(errors.password.message as TranslationKey)}
+                </FieldError>
+              </div>
 
-        <Button type="submit" isLoading={submitting}>
-          {submitting ? t("auth.change.submitting") : t("auth.change.submit")}
-        </Button>
-      </form>
+              <div>
+                <Label htmlFor="confirmPassword">{t("auth.reset.confirmPassword")}</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  hasError={!!errors.confirmPassword}
+                  {...register("confirmPassword")}
+                />
+                <FieldError>
+                  {errors.confirmPassword &&
+                    t(errors.confirmPassword.message as TranslationKey)}
+                </FieldError>
+              </div>
+
+              <Button type="submit" className="w-full" isLoading={submitting}>
+                {submitting ? t("auth.reset.submitting") : t("auth.reset.submit")}
+              </Button>
+            </form>
+          </>
+        )}
       </Card>
-    </div>
+    </AuthLayout>
   );
-}
+      }
