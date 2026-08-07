@@ -136,8 +136,7 @@ export default function ProfilePage() {
 
   const roleLabel = profile.role ? ROLE_LABELS[profile.role]?.[locale] : null;
 
-  
-    return (
+  return (
     <div className="mx-auto w-full max-w-lg p-4">
       <BackButton />
       <Card>
@@ -266,5 +265,4 @@ export default function ProfilePage() {
       </Card>
     </div>
   );
-}
-      
+  }
